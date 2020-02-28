@@ -1,0 +1,24 @@
+library(DBI)
+
+con <- dbConnect(RMySQL::MySQL(),
+                 dbname = "dbname",
+                 host = "hostaddress.com",
+                 port = portnumber,
+                 user = "username",
+                 password = "password")
+
+# Simple import 
+imported <- dbGetQuery(con, "SELECT FROM WHERE ")
+
+# Create data frame 
+imported.to.dataframe <- data.frame(dbGetQuery(con, "SELECT FROM WHERE")
+
+# Send query and get query
+dbGetQuery() = dbSendQuery() + dbFetch()
+
+# Use dbFetch() twice
+dbFetch(imported, n = 2)
+
+dbClearResult(imported)
+
+dbDisconnect(con)
