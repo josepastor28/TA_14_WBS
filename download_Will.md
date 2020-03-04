@@ -1,3 +1,10 @@
+---
+title: "download"
+author: "William"
+date: "2020/2/17"
+output: html_document
+---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -54,7 +61,7 @@ for (i in 1:length(cities)){
   download <- cities[i] %>%
   html_nodes("a") %>%
   html_attr("href")
-  download <- download[1:3]
+  download <- download
   totaldownload <- c(totaldownload,download)
 }
 
@@ -65,10 +72,10 @@ for (i in 1:length(cities)){
 
 ```{r}
 
-dir.create("textdata")
+dir.create("textdatademo")
 #Get file path
 workingfile <- getwd()
-envoirment <- paste0(workingfile,"/","textdata","/")
+envoirment <- paste0(workingfile,"/","textdatademo","/")
 
 ```
 
@@ -77,11 +84,37 @@ envoirment <- paste0(workingfile,"/","textdata","/")
 ```{r}
 
 for (i in 1:length(totaldownload)) {
-  urlsplit <- strsplit(totaldownload[i],,split='/')[[1]]
-  filename <- paste(urlsplit[6],urlsplit[9],sep = "_")
-  finalpath <- paste0(envoirment,filename)
-  download.file(totaldownload[i],finalpath)
+  if (any(str_detect(totaldownload[i],c("listings.csv.gz","calendar.csv.gz","reviews.csv.gz")))){
+    tryCatch({
+    urlsplit <- strsplit(totaldownload[i],split='/')[[1]]
+    filename <- paste(urlsplit[6],urlsplit[7],urlsplit[9],sep = "_")
+    finalpath <- paste0(envoirment,filename)
+    download.file(totaldownload[i],finalpath)
+    },error = function(e) { 
+      print(e)
+      }
+    )
+  }
 }
 
 
+
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
