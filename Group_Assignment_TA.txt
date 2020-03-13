@@ -297,7 +297,333 @@ plot_df$word <- data.frame(str_split_fixed(plot_df$word, "___", 2))$X1
 wordcloud(words = plot_df$word, freq = plot_df$n, min.freq = 1,
           max.words=1000, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
+##===================  Part A.c.1 Readability    ===================##
+##-----------------------------------------------------------------##
 
+```{r}
+
+readability_data <- listings %>%
+  select(id,description,price,review_scores_rating)
+
+readability_data$id <- as.factor(readability_data$id)
+```
+
+
+```{r}
+
+readability_data$description <- iconv(readability_data$description, "latin1", "ASCII", "")
+readability_data$description <- gsub("[^ -~]", "", readability_data$description)
+readability_data <- na.omit(readability_data)
+
+
+```
+
+
+```{r}
+
+readabilitydata_split <- sentSplit(readability_data,"description")
+
+```
+
+```{r old}
+
+readability <- flesch_kincaid(readability_data$description, grouping.var = readability_data$id)
+
+
+
+```
+
+```{r new}
+
+readability <- flesch_kincaid(readabilitydata_split$description, grouping.var = readabilitydata_split$id)
+
+
+
+```
+
+
+
+```{r flesch_kincaid}
+
+readability_data$readability <- readability$Readability$FK_read.ease
+
+```
+
+
+```{r flesch_kincaid}
+
+ggplot(readability_data) + geom_point(aes(x = readability,y = review_score))
+
+ggplot(readability_data) + geom_jitter(aes(x = readability,y = review_score))
+
+```
+
+
+```{r flesch_kincaid}
+
+readability_linear_regression <- lm(review_score ~ readability,data =readability_data)
+summary(readability_linear_regression)
+```
+
+
+
+```{r automated_readability_index}
+
+readability_automated_readability_index <- automated_readability_index(readability_data$description, grouping.var = readability_data$id)
+
+
+
+```
+
+```{r automated_readability_index new}
+
+readability_automated_readability_index <- automated_readability_index(readabilitydata_split$description, grouping.var = readabilitydata_split$id)
+
+
+
+```
+
+
+```{r automated_readability_index}
+
+readability <- left_join(readability_data,readability_automated_readability_index$Readability)
+readability <- na.omit(readability)
+```
+
+
+
+```{r}
+ggplot(readability) + geom_point(aes(x = Automated_Readability_Index,y = review_scores_rating))
+
+```
+```{r}
+readability_wooutlinear <- readability %>% 
+  filter(Automated_Readability_Index > -10 & Automated_Readability_Index < 60)
+
+
+```
+
+```{r}
+scatter <- ggplot(readability_wooutlinear) + geom_jitter(aes(x = Automated_Readability_Index,y = review_scores_rating))
+
+```
+
+```{r}
+heat <- ggplot(readability_wooutlinear) + geom_bin2d(aes(x = Automated_Readability_Index,y = review_scores_rating))
+
+```
+
+```{r}
+scatter
+heat
+```
+
+
+```{r}
+
+readability_linear_regression_automated_readability_index <- lm(review_scores_rating ~ Automated_Readability_Index,data =readability)
+summary(readability_linear_regression_automated_readability_index)
+```
+
+##===================  Part A.c2.name_mention   ===================##
+##-----------------------------------------------------------------##
+
+```{r}
+
+mentionnames <- reviews %>%
+  select(listing_id,comments) %>%
+  filter(!str_detect(comments,"This is an automated posting."))
+
+
+
+```
+
+
+```{r}
+
+names <- listings %>%
+  select(id,host_name) %>%
+  mutate(listing_id = id)
+
+names <- names[,-1]
+  
+    
+```
+
+
+```{r}
+
+detectmentionnames <- left_join(mentionnames,names)
+
+```
+
+
+```{r}
+na.omit(detectmentionnames)
+```
+
+
+
+```{r}
+mentioned <-  vector()
+
+for (i in 1:length(detectmentionnames$listing_id)){
+  exist <- str_detect(detectmentionnames$comments[i],detectmentionnames$host_name[i])
+  mentioned <- append(mentioned,exist)
+  }
+```
+
+
+```{r temp}
+
+load("mentioned.RData")
+
+```
+
+
+```{r}
+
+detectmentionnames$mentioned <- mentioned
+
+```
+
+
+```{r}
+
+mentionrate <- detectmentionnames %>%
+  group_by(listing_id) %>%
+  summarise(mentionrate = mean(mentioned))
+
+```
+
+
+```{r}
+
+listing_neat <- listings %>%
+  select(id,price,review_scores_rating) %>%
+  mutate(listing_id = id)
+
+listing_neat <- listing_neat[,-1]
+
+
+```
+
+
+```{r}
+
+listing_mention <- left_join(listing_neat,mentionrate)
+listing_mention <- na.omit(listing_mention)
+
+```
+
+
+```{r}
+
+ggplot(listing_mention) + geom_jitter(aes(x = mentionrate,y = review_scores_rating))
+
+```
+
+```{r}
+
+ggplot(listing_mention) + geom_bin2d(aes(x = mentionrate,y = review_scores_rating),bins = 40)
+
+```
+
+
+
+```{r}
+
+ggplot(listing_mention) + stat_binhex(aes(x = mentionrate,y = review_scores_rating))
+
+```
+
+```{r}
+
+mentionratelm <- lm(review_scores_rating ~ mentionrate,data = listing_mention) 
+summary(mentionratelm)
+```
+
+##=================Part A.d.description sentiment==================##
+##-----------------------------------------------------------------##
+
+```{r}
+
+polaritydata <- listings %>%
+  select(id,description)
+
+```
+
+```{r}
+polaritydata$description <- gsub('[0-9]+', '', polaritydata$description)
+polaritydata <- na.omit(polaritydata)
+
+```
+
+```{r}
+polaritydata_tokenised <- polaritydata %>%
+  unnest_tokens(word, description)
+
+```
+
+
+```{r}
+
+data(stop_words)
+polaritydata_cleaned <- anti_join(polaritydata_tokenised,stop_words)
+
+```
+
+
+
+```{r}
+bing <- get_sentiments(lexicon = "bing")  
+pos_neg <- polaritydata_cleaned %>% inner_join(bing)
+
+```
+
+```{r}
+pos_neg <- pos_neg %>% group_by(id) %>% count(sentiment) %>% spread(sentiment,n,fill=0)%>% mutate(polarity = positive - negative) 
+
+```
+
+```{r}
+
+polarityprice <- listings %>%
+  select(id,price,review_scores_rating) %>%
+  left_join(pos_neg) %>%
+  na.omit()
+
+```
+```{r}
+polarityprice$price <- as.numeric(str_replace(polarityprice$price,"\\$",""))
+polarityprice <- na.omit(polarityprice)
+```
+
+
+
+```{r}
+ggplot(polarityprice) + geom_jitter(aes(x = polarity,y = price))
+```
+
+
+```{r}
+ggplot(polarityprice) + geom_bin2d(aes(x = polarity,y = price,bins = 50))
+```
+
+```{r}
+ggplot(polarityprice) + geom_jitter(aes(x = polarity,y = review_scores_rating))
+```
+
+
+```{r}
+ggplot(polarityprice) + geom_bin2d(aes(x = polarity,y = review_scores_rating,bins = 50))
+```
+
+
+
+```{r}
+polar
+```
 
 
 ##===================  8. Sentiment Analysis    ===================##
