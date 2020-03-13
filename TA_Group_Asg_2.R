@@ -268,7 +268,7 @@ separate_grams <- function(grams, n, min_f){
 df <- gutenberg_download(10)
 df <- data.frame(text = airbnb_df_copy$comments)
 
-min_f <-  400
+min_f <-  200
 n = 2
 
 df_bigrams <- df %>%
@@ -325,9 +325,9 @@ df <- airbnb_df[,c(text, aggregation)] %>%
 #Pre-procesing
 
 stop_words <- pull(stop_words, word)
-vec_stopwords = c("eq", "co", "rc", "ac", "ak", "bn", 
+vec_stopwords = c(stop_words, c("eq", "co", "rc", "ac", "ak", "bn", 
                   "fig", "file", "cg", "cb", "cm",
-                  "ab", "_k", "_k_", "_x")
+                  "ab", "_k", "_k_", "_x"))
 character_removal = c("_")
 top_n <- 15 #Top number for words
 col_n <- 2 #Two columns in final wrap
@@ -352,15 +352,14 @@ plot_polarity <- function(df){
 }
 
 plot_dispersion <- function(df, vec){
-  dispersion_plot(df$text, vec, df$aggregation)}
-
-library(data.table)
+  dispersion_plot(df$text, vec, df$aggregation)
+  
 #Define the dataframe
 text <- 'comments'
 aggregation <- 'room_type'
 vec_subset <- c(text, aggregation)
 df <- airbnb_df[,c(text, aggregation)] %>% 
-    setnames(old = vec_subset, new = c('text','aggregation'))
+    setnames(old = vec_subset, new = c('text','aggregation'))}
 
 plot_diversity(df)
 plot_formality(df)
